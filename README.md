@@ -457,6 +457,46 @@ aws lakeformation list-permissions --region "$AWS_REGION" \
 
 課金リソースを残さないよう、検証が終わったら必ず削除します。
 
+> **Lake Formation 有効アカウントでの事前権限付与 (destroy 前・重要)**
+> Lake Formation が完全管理モードの場合、`AdministratorAccess` や Data Lake 管理者であっても
+> テーブル/DB の `DROP` などの**実効権限**は LF 側で別管理です。これが無いと `terraform destroy`
+> が次のエラーで失敗します。
+> ```
+> AccessDeniedException: Insufficient Lake Formation permission(s): Required Drop on errors
+> ```
+> （apply 時の SELECT/INSERT 不足と同じ「grant option はあるが実効権限が無い」症状です。）
+>
+> なお、この付与を Terraform (`aws_lakeformation_permissions`) で管理しても destroy は解決しません。
+> grant リソースが対象テーブルに依存するため、`terraform destroy` ではテーブルより**先に grant が
+> revoke** され、結局テーブル削除時に `DROP` を失います（鶏卵問題）。そのため destroy 直前に CLI で
+> 実行ロールへ付与します。
+>
+> ```bash
+> export AWS_REGION=ap-northeast-1
+> # terraform を実行するロール ARN (例: SSO の AdministratorAccess の実体 ARN)
+> EXEC_ROLE=$(aws iam list-roles \
+>   --query "Roles[?contains(RoleName,'AWSReservedSSO_AWSAdministratorAccess')].Arn" \
+>   --output text)
+> ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+> S3TABLES_CATALOG=${ACCOUNT_ID}:s3tablescatalog/otel-log-pipeline-dev-s3tables
+>
+> # Glue セルフマネージド側: table と database へ削除に必要な実効権限を付与
+> aws lakeformation grant-permissions --region "$AWS_REGION" \
+>   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
+>   --permissions DROP ALTER DELETE DESCRIBE INSERT SELECT \
+>   --resource '{"Table":{"DatabaseName":"otel_log_pipeline_dev_logs","Name":"errors"}}'
+> aws lakeformation grant-permissions --region "$AWS_REGION" \
+>   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
+>   --permissions DROP DESCRIBE CREATE_TABLE \
+>   --resource '{"Database":{"Name":"otel_log_pipeline_dev_logs"}}'
+>
+> # S3 Tables 側 (federated カタログ) も同様に付与
+> aws lakeformation grant-permissions --region "$AWS_REGION" \
+>   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
+>   --permissions DROP ALTER DELETE DESCRIBE \
+>   --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"otel_log_pipeline_dev\",\"Name\":\"error_logs\"}}"
+> ```
+
 ```bash
 # 1) Terraform で作成した AWS リソースを削除 (EC2 内 infra/ ディレクトリで)
 cd ~/handson-log-to-iceberg/infra
