@@ -53,9 +53,12 @@ resource "aws_glue_catalog_table" "iceberg_errors" {
     }
   }
 
+  # 注意: open_table_format_input.iceberg_input を使う場合、Glue は table_type=ICEBERG と
+  # metadata_location を自動的に設定する。これらは予約パラメータのため、parameters に
+  # 含めると CreateTable が InvalidInputException
+  # ("Cannot use reserved parameters table_type or metadata_location...") で失敗する。
+  # したがって Iceberg の書き込みプロパティ (Req 6.4) のみを指定する。
   parameters = {
-    # セルフマネージド Iceberg テーブルとして識別させる
-    "table_type" = "ICEBERG"
     # Iceberg テーブルプロパティ (Req 6.4)
     "format-version"       = "2"             # Iceberg V2
     "write.format.default" = "parquet"       # Parquet

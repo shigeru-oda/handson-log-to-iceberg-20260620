@@ -53,6 +53,15 @@ locals {
 # -----------------------------------------------------------------------------
 resource "aws_s3tables_table_bucket" "iceberg" {
   name = local.s3tables_bucket_name
+
+  # S3 Tables テーブルバケットはデフォルトでサーバーサイド暗号化 (SSE-S3/AES256) が
+  # 有効になる。provider v5.100.0 はこのデフォルトを構成へ反映しないため、未指定だと
+  # apply 後に "Provider produced inconsistent result" エラーが発生する。
+  # API が返すデフォルト値を明示することで config と一致させる。
+  encryption_configuration = {
+    sse_algorithm = "AES256"
+    kms_key_arn   = null
+  }
 }
 
 # -----------------------------------------------------------------------------
