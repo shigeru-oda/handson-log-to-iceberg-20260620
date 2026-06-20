@@ -1,0 +1,783 @@
+{
+  "pbtResults": {
+    "4.2 Property 2 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943160512
+    },
+    "4.3 Property 3 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943177527
+    },
+    "3.3 Property 1 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943188703
+    },
+    "6.2 Property 4 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943299575
+    },
+    "5.2 Property 6 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943319251
+    },
+    "6.3 Property 5 のプロパティベーステストを作成": {
+      "status": "passed",
+      "lastRunTimestamp": 1781943336118
+    }
+  },
+  "executionHistory": {
+    "1. Go プロジェクト雛形とディレクトリ構成のセットアップ": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914384
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940951965
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781941415939
+      }
+    ],
+    "2.1 `LoadConfig(env map[string]string) (Config, error)` を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914447
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781941428390
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942822708
+      }
+    ],
+    "2.2 `LoadConfig` のユニットテストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914475
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942831568
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942960573
+      }
+    ],
+    "3.1 `SeverityNumber` 定数群と `LogRecord` 構造体を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914532
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781941429269
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942823549
+      }
+    ],
+    "3.2 `Generate(rng *rand.Rand, now time.Time) LogRecord` を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914559
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942833485
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942961600
+      }
+    ],
+    "3.3 Property 1 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914589
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943087576
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943205309
+      }
+    ],
+    "3.4 `Generate` の出力に関するユニットテストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914608
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943088556
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943205735
+      }
+    ],
+    "4.1 `IsError` と経路判定関数 `Route(severityNumber) []Destination` を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914632
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942834467
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942963558
+      }
+    ],
+    "4.2 Property 2 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914657
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943090591
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943206606
+      }
+    ],
+    "4.3 Property 3 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914684
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943091568
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943208625
+      }
+    ],
+    "4.4 severity 境界のユニットテストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914712
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943092215
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943208831
+      }
+    ],
+    "5.1 `Scheduler` 構造体と `Next(prev time.Time) time.Time` を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914741
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942835400
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942964624
+      }
+    ],
+    "5.2 Property 6 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914766
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943218312
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943473369
+      }
+    ],
+    "6.1 `LogRecord` → Iceberg 行へのマッピング関数を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914799
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942836744
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942966359
+      }
+    ],
+    "6.2 Property 4 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914830
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943219433
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943471373
+      }
+    ],
+    "6.3 Property 5 のプロパティベーステストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914859
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943220368
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943472358
+      }
+    ],
+    "7.1 `main` を実装し各コンポーネントを結線": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914888
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943620014
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943850141
+      }
+    ],
+    "7.2 main ループの統合テストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914927
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943917659
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944061466
+      }
+    ],
+    "8. チェックポイント - Go アプリの全テストを通す": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940914977
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944597093
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944655062
+      }
+    ],
+    "9.1 マルチステージ `Dockerfile` を作成しコンテナをビルド": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915059
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943918679
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944062094
+      }
+    ],
+    "10.1 provider / backend / variables / locals を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915083
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940965917
+      },
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781941416779
+      }
+    ],
+    "11.1 VPC・サブネット・セキュリティグループを定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915109
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942973462
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943072163
+      }
+    ],
+    "12.1 S3 バケット 2 種を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915134
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942975519
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943073748
+      }
+    ],
+    "12.2 CloudWatch Logs ロググループを定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915167
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942975804
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943074298
+      }
+    ],
+    "13.1 S3 Tables の table bucket・namespace・table を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915196
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943221329
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943475360
+      }
+    ],
+    "13.2 Glue database と Iceberg テーブルを定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915223
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943223625
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943475962
+      }
+    ],
+    "14.1 ECS タスクロールとタスク実行ロールを定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915247
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943482273
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943610731
+      }
+    ],
+    "14.2 Firehose 配信ロール 3 種を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915274
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943483207
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943611688
+      }
+    ],
+    "15.1 `full-logs` ストリーム (→ S3) を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915298
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943621060
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943851193
+      }
+    ],
+    "15.2 `s3tables-iceberg` ストリーム (→ S3 Tables Iceberg) を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915325
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943623078
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943853116
+      }
+    ],
+    "15.3 `glue-iceberg` ストリーム (→ Glue Iceberg) を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915349
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943624093
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943854113
+      }
+    ],
+    "16.1 `custom.conf` を作成し severity ベースのルーティングを実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915376
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943624704
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943856103
+      }
+    ],
+    "17.1 ECS クラスタを定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915441
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943856678
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943911989
+      }
+    ],
+    "17.2 タスク定義 (app + FireLens Fluent Bit サイドカー) を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915476
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943920748
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944058230
+      }
+    ],
+    "17.3 ECS サービス (Fargate, desiredCount=1) を定義": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915508
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944066955
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944130591
+      }
+    ],
+    "18. チェックポイント - Go テストと Terraform 構成の整合確認": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915533
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944660849
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944767824
+      }
+    ],
+    "19.1 Terraform `validate`/`plan` のスナップショット検証を実装": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915563
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944136114
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944584083
+      }
+    ],
+    "19.2 手動 E2E 検証チェックリストを作成": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781940915592
+      },
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944136917
+      }
+    ],
+    "10. Terraform provider・バックエンド・共通設定": [
+      {
+        "executionId": "3f29d1d4-99f8-45e5-89d3-ae77b5543d28",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781941416834
+      }
+    ],
+    "2. 設定読み込み (config パッケージ) の実装": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781942960608
+      }
+    ],
+    "11. Terraform ネットワーク構成": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943072209
+      }
+    ],
+    "12. Terraform ストレージ・ログ基盤 (S3 / CloudWatch)": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943074327
+      }
+    ],
+    "3. OTel ログレコードモデルと生成ロジック (otel パッケージ) の実装": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943205809
+      }
+    ],
+    "4. ルーティング判定リファレンス関数 (routing パッケージ) の実装": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943208910
+      }
+    ],
+    "6. Iceberg スキーママッピング (iceberg パッケージ) の実装": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943472388
+      }
+    ],
+    "5. 出力間隔スケジューラ (scheduler パッケージ) の実装": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943473393
+      }
+    ],
+    "13. Terraform Iceberg カタログ (S3 Tables / Glue)": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943476014
+      }
+    ],
+    "14. Terraform IAM ロール": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943611755
+      }
+    ],
+    "15. Terraform Amazon Data Firehose 配信ストリーム": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943854145
+      }
+    ],
+    "16. Fluent Bit カスタム設定 (FireLens) の作成": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781943856130
+      }
+    ],
+    "7. アプリ本体 (cmd/log-generator) の結線": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944061523
+      }
+    ],
+    "9. Go アプリのコンテナ化": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944062156
+      }
+    ],
+    "17. Terraform ECS (クラスタ・タスク定義・サービス)": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944130621
+      }
+    ],
+    "19. 検証 (Terraform 静的検証と E2E チェックリスト)": [
+      {
+        "executionId": "a61212b0-c734-44fb-aa19-8644201597db",
+        "chatSessionId": "sess_f332caec-ce64-4aa3-8138-721aa460f3db",
+        "timestamp": 1781944786293
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+# Keep the build context minimal: only source needed to build the binary.
+Dockerfile
+.dockerignore
+
+# Tests and test fixtures are not needed in the image build.
+**/*_test.go
+
+# Editor / OS cruft
+.DS_Store
+*.swp
