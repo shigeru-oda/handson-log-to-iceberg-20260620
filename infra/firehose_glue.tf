@@ -35,12 +35,20 @@
 
 locals {
   # 標準的な Glue Data Catalog の ARN (arn:aws:glue:<region>:<account>:catalog)
-  firehose_glue_catalog_arn = "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog"
+  firehose_glue_catalog_arn = "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog"
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "glue_iceberg" {
   name        = local.firehose_stream_names.glue
   destination = "iceberg"
+
+  # CreateDeliveryStream 時に配信ロールの Glue 権限が検証されるため、inline ポリシー
+  # および Lake Formation の grant が揃ってからストリームを作成するよう依存させる。
+  depends_on = [
+    aws_iam_role_policy.firehose_glue,
+    aws_lakeformation_permissions.firehose_glue_database,
+    aws_lakeformation_permissions.firehose_glue_table,
+  ]
 
   iceberg_configuration {
     role_arn    = aws_iam_role.firehose_glue.arn

@@ -27,7 +27,7 @@ locals {
   # Firehose の Iceberg 配信が S3 Tables を宛先とする場合、Glue Data Catalog の
   # S3 Tables federated カタログ (s3tablescatalog) 配下のテーブルバケットを指す。
   # 形式: arn:aws:glue:<region>:<account>:catalog/s3tablescatalog/<table-bucket-name>
-  firehose_s3tables_catalog_arn = "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:catalog/s3tablescatalog/${local.s3tables_bucket_name}"
+  firehose_s3tables_catalog_arn = "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog/s3tablescatalog/${local.s3tables_bucket_name}"
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "s3tables_iceberg" {
@@ -35,6 +35,12 @@ resource "aws_kinesis_firehose_delivery_stream" "s3tables_iceberg" {
   # (iam_ecs.tf: local.firehose_stream_names.s3tables = "${local.prefix}-s3tables-iceberg")。
   name        = local.firehose_stream_names.s3tables
   destination = "iceberg"
+
+  # CreateDeliveryStream 時に配信ロールの Glue/S3 Tables 権限が検証される。
+  # inline ポリシー attach 後にストリームを作成するよう依存させる。
+  # S3 Tables の Lake Formation grant は provider 制約により CLI で付与するため
+  # (lakeformation.tf 参照)、その grant 実施後に本ストリームを apply すること。
+  depends_on = [aws_iam_role_policy.firehose_s3tables]
 
   iceberg_configuration {
     # S3 Tables 連携用 Glue federated カタログ ARN

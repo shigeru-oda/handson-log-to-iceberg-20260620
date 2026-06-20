@@ -17,7 +17,7 @@ data "aws_region" "current" {}
 
 locals {
   # バケット名サフィックス: {account_id}-{region}
-  s3_bucket_name_suffix = "${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  s3_bucket_name_suffix = "${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
 
   # 全ログ raw 用バケット名 (Req 4.2, 4.4)
   full_logs_bucket_name = "${local.prefix}-full-logs-${local.s3_bucket_name_suffix}"

@@ -101,6 +101,19 @@ resource "aws_glue_catalog_table" "iceberg_errors" {
       type = "string"
     }
   }
+
+  # Iceberg テーブルへ Firehose が書き込みを開始すると、Glue カタログ側の
+  # parameters (metadata_location / previous_metadata_location) や
+  # storage_descriptor のカラム parameters (iceberg.field.*) が書き込みエンジン側で
+  # 更新される。これらは Iceberg writer が所有する実行時メタデータであり、Terraform が
+  # 管理対象にすると毎回ドリフト差分が出る。作成後はこれらを無視し、Iceberg メタデータを
+  # source of truth とする。
+  lifecycle {
+    ignore_changes = [
+      parameters,
+      storage_descriptor,
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------

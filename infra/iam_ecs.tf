@@ -32,7 +32,7 @@ locals {
   # 既知のストリーム名から文字列で構築する。
   firehose_stream_arns = [
     for name in values(local.firehose_stream_names) :
-    "arn:aws:firehose:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:deliverystream/${name}"
+    "arn:aws:firehose:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:deliverystream/${name}"
   ]
 }
 

@@ -19,7 +19,7 @@
 
 locals {
   # Glue ARN 構築用の共通要素 (data ソースは s3.tf で宣言済み)
-  glue_arn_prefix = "arn:aws:glue:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}"
+  glue_arn_prefix = "arn:aws:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
 
   # Glue カタログ / database / table の ARN
   glue_catalog_arn  = "${local.glue_arn_prefix}:catalog"
@@ -117,7 +117,11 @@ data "aws_iam_policy_document" "firehose_s3tables" {
   }
 
   # S3 Tables の Glue federated カタログ連携 (read) — Firehose の Iceberg 配信が
-  # 宛先テーブルスキーマを解決するために必要
+  # 宛先テーブルスキーマを解決するために必要。
+  # S3 Tables を「IAM アクセスコントロール」で統合 (s3tablescatalog を IAM_ALLOWED_PRINCIPALS
+  # で作成) した場合、アクセスは IAM のみで決まり Lake Formation の grant は不要。
+  # ここでは AWS ドキュメントの Firehose ロールサンプルに合わせ、federated カタログ配下の
+  # database / table も解決できるよう database/* と table/*/* を含める。
   statement {
     sid    = "GlueS3TablesCatalogRead"
     effect = "Allow"
@@ -135,7 +139,19 @@ data "aws_iam_policy_document" "firehose_s3tables" {
       local.glue_catalog_arn,
       local.glue_s3tables_catalog_arn,
       "${local.glue_s3tables_catalog_arn}/*",
+      "${local.glue_arn_prefix}:database/*",
+      "${local.glue_arn_prefix}:table/*/*",
     ]
+  }
+
+  # Lake Formation のデータアクセス資格情報発行。S3 Tables フェデレーションカタログは
+  # IAM アクセスコントロールでもデータアクセスの vending が Lake Formation 経由となるため、
+  # 配信ロールに lakeformation:GetDataAccess を許可しておく (AWS の Firehose ロールサンプル準拠)。
+  statement {
+    sid       = "LakeFormationDataAccess"
+    effect    = "Allow"
+    actions   = ["lakeformation:GetDataAccess"]
+    resources = ["*"]
   }
 
   # 中間 / バックアップ (Firehose エラー出力) 用 S3 — full-logs バケットを退避先に流用

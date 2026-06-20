@@ -11,15 +11,13 @@
 # 設計書 (design.md / Iceberg_Schema_Mapping) のスキーマ表どおり、全カラム名は
 # 小文字で定義する。下記 local.s3tables_iceberg_columns がその正典 (小文字カラム一覧)。
 #
-# ただし、本環境にインストールされている AWS provider (hashicorp/aws v5.100.0) の
-# aws_s3tables_table リソースは、カラムスキーマをインラインで宣言する引数
-# (metadata / schema / field 等) を **サポートしていない** (format / name /
-# namespace / table_bucket_arn / encryption_configuration /
-# maintenance_configuration のみ)。
-# したがって、テーブルは format = "ICEBERG" で作成し、実際のスキーマ (小文字カラム) は
-# Firehose の Iceberg 配信 (Iceberg V2 / Parquet / Merge-on-Read) もしくは Athena の
-# DDL によって作成・管理される。レコード側のキー名を下記の小文字カラム名と一致させる
-# ことで、Firehose が宛先テーブルスキーマへ正しくマッピングできる (design.md 参照)。
+# スキーマは aws_s3tables_table の metadata.iceberg.schema ブロックで宣言する
+# (provider hashicorp/aws v6.4 以降で対応)。これにより S3 Tables テーブルの Iceberg
+# メタデータ (metadata_location) が作成時に初期化され、Firehose の Iceberg 配信が
+# コミット先テーブルを解決できる。スキーマ未宣言だと metadata_location が空のまま作られ、
+# Firehose 配信が成立せず Athena も "missing [metadata_location]" で失敗する。
+# レコード側のキー名 (Fluent Bit で整形した小文字カラム) を宛先スキーマと一致させること
+# で、Firehose が正しくマッピングできる (design.md 参照)。
 #
 # 【tags について】
 # aws_s3tables_* リソース群は tags 引数をサポートしないため local.common_tags は
@@ -83,6 +81,47 @@ resource "aws_s3tables_table" "error_logs" {
   namespace        = aws_s3tables_namespace.iceberg.namespace
   table_bucket_arn = aws_s3tables_table_bucket.iceberg.arn
   format           = "ICEBERG"
+
+  # Iceberg スキーマ (小文字フラットスキーマ / design.md Iceberg_Schema_Mapping)。
+  # provider v6.4 以降は metadata.iceberg.schema でスキーマを宣言でき、これにより
+  # S3 Tables テーブルの Iceberg メタデータ (metadata_location) が作成時に初期化される。
+  # 未指定だと metadata_location が空のまま作られ、Firehose の Iceberg 配信が
+  # コミット先を解決できず、Athena も "missing [metadata_location]" で失敗する。
+  # カラム名/型は Glue セルフマネージド側 (glue.tf) と同一に揃える (Req 6.5)。
+  metadata {
+    iceberg {
+      schema {
+        field {
+          name = "event_time"
+          type = "timestamp"
+        }
+        field {
+          name = "severity_number"
+          type = "int"
+        }
+        field {
+          name = "severity_text"
+          type = "string"
+        }
+        field {
+          name = "body"
+          type = "string"
+        }
+        field {
+          name = "resource_json"
+          type = "string"
+        }
+        field {
+          name = "attributes_json"
+          type = "string"
+        }
+        field {
+          name = "ingest_date"
+          type = "string"
+        }
+      }
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------

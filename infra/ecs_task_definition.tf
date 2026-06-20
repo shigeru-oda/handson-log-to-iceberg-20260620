@@ -44,15 +44,68 @@ variable "log_interval_ms" {
 }
 
 variable "app_image" {
-  description = "Log_Generator (app) コンテナイメージ。ECR のイメージ URI もしくはタグを指定する。"
+  description = <<-EOT
+    Log_Generator (app) コンテナイメージ。
+    空文字 (デフォルト) の場合は、実行アカウント/リージョンの ECR リポジトリ
+    (app_repository_name:image_tag) から自動的に完全な URI を構築する。
+    完全なイメージ URI を明示したい場合のみ値を指定する (-var="app_image=...")。
+  EOT
   type        = string
-  default     = "log-generator:latest"
+  default     = ""
 }
 
 variable "fluent_bit_image" {
-  description = "FireLens (Fluent Bit) サイドカーのコンテナイメージ。custom.conf をベイクしたカスタムイメージの利用を推奨。"
+  description = <<-EOT
+    FireLens (Fluent Bit) サイドカーのコンテナイメージ。
+    空文字 (デフォルト) の場合は、実行アカウント/リージョンの ECR リポジトリ
+    (fluent_bit_repository_name:image_tag) から自動的に完全な URI を構築する。
+    custom.conf をベイクしたカスタムイメージの利用を前提とする。
+    完全なイメージ URI を明示したい場合のみ値を指定する (-var="fluent_bit_image=...")。
+  EOT
   type        = string
-  default     = "public.ecr.aws/aws-observability/aws-for-fluent-bit:stable"
+  default     = ""
+}
+
+variable "app_repository_name" {
+  description = "app コンテナイメージの ECR リポジトリ名 (app_image 未指定時に使用)。"
+  type        = string
+  default     = "log-generator"
+}
+
+variable "fluent_bit_repository_name" {
+  description = "FireLens カスタムイメージの ECR リポジトリ名 (fluent_bit_image 未指定時に使用)。"
+  type        = string
+  default     = "custom-fluent-bit"
+}
+
+variable "image_tag" {
+  description = "ECR から URI を自動構築する際に使用するイメージタグ (app_image / fluent_bit_image 未指定時に使用)。"
+  type        = string
+  default     = "latest"
+}
+
+# -----------------------------------------------------------------------------
+# イメージ URI の解決
+#   app_image / fluent_bit_image が明示指定されていればそれを使用し、
+#   未指定 (空文字) の場合は実行アカウント/リージョンの ECR レジストリから
+#   完全な URI を自動構築する。これにより -var を毎回渡さなくても、
+#   レジストリ名なしのタグだけが Docker Hub に誤解決される事故を防ぐ。
+#   (data.aws_caller_identity.current / data.aws_region.current は s3.tf で宣言)
+# -----------------------------------------------------------------------------
+locals {
+  ecr_registry = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.region}.amazonaws.com"
+
+  app_image_resolved = (
+    var.app_image != ""
+    ? var.app_image
+    : "${local.ecr_registry}/${var.app_repository_name}:${var.image_tag}"
+  )
+
+  fluent_bit_image_resolved = (
+    var.fluent_bit_image != ""
+    ? var.fluent_bit_image
+    : "${local.ecr_registry}/${var.fluent_bit_repository_name}:${var.image_tag}"
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -75,8 +128,16 @@ resource "aws_ecs_task_definition" "app" {
     # -------------------------------------------------------------------------
     {
       name      = "app"
-      image     = var.app_image
+      image     = local.app_image_resolved
       essential = true
+
+      # AWS が登録時に補完する既定値を明示し、apply ごとの不要な
+      # タスク定義 replace (リビジョン増加) を防ぐ。
+      cpu            = 0
+      mountPoints    = []
+      portMappings   = []
+      systemControls = []
+      volumesFrom    = []
 
       environment = [
         {
@@ -98,8 +159,18 @@ resource "aws_ecs_task_definition" "app" {
     # -------------------------------------------------------------------------
     {
       name      = "log_router"
-      image     = var.fluent_bit_image
+      image     = local.fluent_bit_image_resolved
       essential = true
+
+      # AWS が登録時に補完する既定値を明示し、apply ごとの不要な
+      # タスク定義 replace (リビジョン増加) を防ぐ。
+      # FireLens コンテナはログ書き込みのため root (user "0") で実行される。
+      user           = "0"
+      cpu            = 0
+      mountPoints    = []
+      portMappings   = []
+      systemControls = []
+      volumesFrom    = []
 
       firelensConfiguration = {
         type = "fluentbit"
