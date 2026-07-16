@@ -64,8 +64,8 @@ terraform apply
 
 ## 全体の流れ
 
-1. Amazon EC2 用の AWS Identity and Access Management (IAM) ロール (インスタンスプロファイル) を作成する
-2. 作業用 Amazon EC2 を作成する (AWS CLI)
+1. Amazon EC2 用の AWS Identity and Access Management (IAM) ロール (インスタンスプロファイル) を作成する (マネジメントコンソール)
+2. 作業用 Amazon EC2 を作成する (マネジメントコンソール)
 3. SSM Session Manager で Amazon EC2 に接続する
 4. Amazon EC2 内に必要ツールをインストールする
 5. リポジトリを取得し、ハンズオンを実行する
@@ -74,7 +74,7 @@ terraform apply
 ## 前提
 
 - AWS アカウントを保有し、対象リージョンは **ap-northeast-1**。
-- 手元の端末に AWS CLI v2 が設定済み (`aws sts get-caller-identity` が成功する) であること。
+- AWS マネジメントコンソールにログインできること。
 - Amazon EC2 / IAM を作成できる権限を持つこと。
 
 ## ステップ 0: Amazon EC2 用 IAM ロール (インスタンスプロファイル) の作成
@@ -85,98 +85,59 @@ terraform apply
 > 本ハンズオンは IAM ロールも作成するため、`PowerUserAccess` では不足します。簡便さを優先し、ここでは **`AdministratorAccess`** を付与します。これは非常に広い権限です。**ハンズオン専用とし、完了後は必ず削除してください** (本番運用では最小権限へ絞ること)。
 > あわせて、SSM Session Manager 接続のために **`AmazonSSMManagedInstanceCore`** を付与します。
 
-### IAM 準備
+### IAM 準備 (マネジメントコンソール)
 
-```bash
-# 1) EC2 が assume できる信頼ポリシーでロールを作成
-cat > /tmp/ec2-trust.json <<'JSON'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": { "Service": "ec2.amazonaws.com" },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-JSON
+1. AWS マネジメントコンソールで リージョンを「アジアパシフィック (東京) ap-northeast-1」に切り替える。
+2. **IAM** サービスを開き、左メニューから「ロール」を選択し、「ロールを作成」をクリック。
+3. 信頼されたエンティティタイプ: 「AWS のサービス」を選択。ユースケース: 「EC2」を選択し、「次へ」をクリック。
+4. 許可ポリシーの追加:
+   - 検索欄で `AdministratorAccess` を検索し、チェックを入れる。
+   - 続けて `AmazonSSMManagedInstanceCore` を検索し、チェックを入れる。
+   - 「次へ」をクリック。
+5. ロール名: `handson-iceberg-ec2-role` を入力。
+6. 「ロールを作成」をクリック。
 
-aws iam create-role \
-  --role-name handson-iceberg-ec2-role \
-  --assume-role-policy-document file:///tmp/ec2-trust.json
-
-# 2) 必要な管理ポリシーをアタッチ (ハンズオン専用・完了後に削除)
-aws iam attach-role-policy \
-  --role-name handson-iceberg-ec2-role \
-  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
-
-aws iam attach-role-policy \
-  --role-name handson-iceberg-ec2-role \
-  --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-
-# 3) インスタンスプロファイルを作成しロールを登録
-aws iam create-instance-profile \
-  --instance-profile-name handson-iceberg-ec2-profile
-
-aws iam add-role-to-instance-profile \
-  --instance-profile-name handson-iceberg-ec2-profile \
-  --role-name handson-iceberg-ec2-role
-```
+> IAM コンソールでロールを作成すると、同名のインスタンスプロファイル (`handson-iceberg-ec2-role`) が自動的に作成されます。ステップ 1 で IAM インスタンスプロファイルを選択する際にはこの名前を使用します。
 
 ## ステップ 1: 作業用 Amazon EC2 の作成
 
 推奨スペック: **Amazon Linux 2023 / x86_64 / t3.large (2 vCPU・8 GB) / gp3 30 GB**。Docker ビルドと Terraform を快適に動かすため t3.large 程度を推奨します。
 
-ステップ 0 でインスタンスプロファイルを作成済みであることが前提です。
+ステップ 0 でロール (インスタンスプロファイル) を作成済みであることが前提です。
 
-```bash
-export AWS_REGION=ap-northeast-1
+### マネジメントコンソールで Amazon EC2 を起動
 
-# 1) 最新の Amazon Linux 2023 (x86_64) AMI ID を SSM パブリックパラメータから取得
-AMI_ID=$(aws ssm get-parameters \
-  --region "$AWS_REGION" \
-  --names /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
-  --query 'Parameters[0].Value' --output text)
-echo "AMI_ID=$AMI_ID"
-
-# 2) 既定 Amazon VPC のデフォルトサブネットを 1 つ取得
-SUBNET_ID=$(aws ec2 describe-subnets \
-  --region "$AWS_REGION" \
-  --filters Name=default-for-az,Values=true \
-  --query 'Subnets[0].SubnetId' --output text)
-echo "SUBNET_ID=$SUBNET_ID"
-
-# 3) Amazon EC2 を起動 (キーペアなし / SSM 接続 / パブリック IP 付与 / gp3 30GB)
-INSTANCE_ID=$(aws ec2 run-instances \
-  --region "$AWS_REGION" \
-  --image-id "$AMI_ID" \
-  --instance-type t3.large \
-  --iam-instance-profile Name=handson-iceberg-ec2-profile \
-  --subnet-id "$SUBNET_ID" \
-  --associate-public-ip-address \
-  --metadata-options "HttpTokens=required,HttpEndpoint=enabled" \
-  --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":30,"VolumeType":"gp3","DeleteOnTermination":true}}]' \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=handson-iceberg-builder}]' \
-  --query 'Instances[0].InstanceId' --output text)
-echo "INSTANCE_ID=$INSTANCE_ID"
-
-# 4) 起動完了を待機
-aws ec2 wait instance-status-ok --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
-echo "EC2 is ready: $INSTANCE_ID"
-```
+1. AWS マネジメントコンソールで リージョンを「アジアパシフィック (東京) ap-northeast-1」に切り替える。
+2. **Amazon EC2** サービスを開き、左メニューから「インスタンス」を選択し、「インスタンスを起動」をクリック。
+3. **名前とタグ**: 名前に `handson-iceberg-builder` を入力。
+4. **アプリケーションおよび OS イメージ (AMI)**: Amazon Linux → **Amazon Linux 2023 (64 ビット x86)** を選択。
+5. **インスタンスタイプ**: `t3.large` を選択。
+6. **キーペア (ログイン)**: SSM で接続するため「**キーペアなしで続行**」を選択 (SSH は使いません)。
+7. **ネットワーク設定**: 既定の Amazon VPC / サブネットでよい。「**パブリック IP の自動割り当て**」を **有効** にする。セキュリティグループは受信ルール不要 (デフォルトのアウトバウンド全許可のみで SSM 接続が可能)。
+8. **ストレージを設定**: ルートボリュームを **30 GiB / gp3** に変更。
+9. **高度な詳細** を展開:
+   - **IAM インスタンスプロファイル**: `handson-iceberg-ec2-role` を選択。
+   - **メタデータのバージョン**: 「V2 のみ (トークン必須)」を推奨。
+10. 右側の概要を確認し「**インスタンスを起動**」をクリック。
+11. インスタンス一覧画面で、ステータスチェックが **2/2** になるまで待つ。
 
 > SSM Session Manager で接続するには、インスタンスが SSM エンドポイント (443番) へ到達できる必要があります。上記はパブリックサブネット + パブリック IP 構成のため、デフォルトのアウトバウンド全許可で到達できます。
 
 ## ステップ 2: Amazon EC2 へ接続する (SSM Session Manager)
 
-手元の端末に Session Manager プラグインが必要です (未導入の場合は「Session Manager plugin」でインストール)。
+マネジメントコンソールから直接接続できます。
 
-```bash
-aws ssm start-session --region ap-northeast-1 --target "$INSTANCE_ID"
-```
+1. **Amazon EC2** サービス → 左メニュー「インスタンス」で `handson-iceberg-builder` を選択。
+2. 画面上部の「接続」ボタンをクリック。
+3. 「Session Manager」タブを選択し、「接続」をクリック。
 
-接続後はデフォルトで `ssm-user` になります。以降のコマンドは Amazon EC2 内で実行します (必要に応じて `sudo` を使用)。
+ブラウザ内にターミナルが開きます。以降のコマンドは Amazon EC2 内で実行します (必要に応じて `sudo` を使用)。
+
+> **AWS CLI から接続する場合 (任意)**
+> 手元の端末に Session Manager プラグインが導入済みであれば、インスタンス一覧画面で確認できるインスタンス ID を使って以下でも接続できます。
+> ```bash
+> aws ssm start-session --region ap-northeast-1 --target <インスタンスID>
+> ```
 
 ## ステップ 3: Amazon EC2 内に必要ツールをインストールする
 
@@ -500,23 +461,17 @@ aws ecr delete-repository --repository-name log-generator --force --region ap-no
 aws ecr delete-repository --repository-name custom-fluent-bit --force --region ap-northeast-1
 ```
 
-作業用 Amazon EC2 と IAM の削除 (手元の端末から):
+作業用 Amazon EC2 と IAM の削除 (マネジメントコンソール):
 
-```bash
-# Amazon EC2 の終了
-aws ec2 terminate-instances --region ap-northeast-1 --instance-ids "$INSTANCE_ID"
-aws ec2 wait instance-terminated --region ap-northeast-1 --instance-ids "$INSTANCE_ID"
+1. **Amazon EC2 の終了**:
+   - Amazon EC2 コンソール → 左メニュー「インスタンス」で `handson-iceberg-builder` を選択。
+   - 「インスタンスの状態」メニュー → 「インスタンスを終了 (削除)」をクリック。
+   - 確認ダイアログで「終了」を実行。ステータスが「terminated」になるまで待つ。
 
-# インスタンスプロファイル / ロールの削除
-aws iam remove-role-from-instance-profile \
-  --instance-profile-name handson-iceberg-ec2-profile --role-name handson-iceberg-ec2-role
-aws iam delete-instance-profile --instance-profile-name handson-iceberg-ec2-profile
-aws iam detach-role-policy --role-name handson-iceberg-ec2-role \
-  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
-aws iam detach-role-policy --role-name handson-iceberg-ec2-role \
-  --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-aws iam delete-role --role-name handson-iceberg-ec2-role
-```
+2. **IAM ロール / インスタンスプロファイルの削除**:
+   - IAM コンソール → 左メニュー「ロール」で `handson-iceberg-ec2-role` を検索し選択。
+   - 「削除」をクリックし、確認ダイアログでロール名を入力して削除を実行。
+   - (IAM コンソールでロールを作成した場合、ロール削除時にインスタンスプロファイルも自動削除されます。)
 
 ## 補足
 
