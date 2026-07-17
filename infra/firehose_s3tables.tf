@@ -49,9 +49,9 @@ resource "aws_kinesis_firehose_delivery_stream" "s3tables_iceberg" {
     # Firehose Iceberg 配信ロール (S3 Tables / Glue 連携 / 中間 S3 権限)
     role_arn = aws_iam_role.firehose_s3tables.arn
 
-    # バッファリング設定 (Iceberg 配信)
-    buffering_interval = 60 # 秒
-    buffering_size     = 64 # MiB
+    # バッファリング設定 (他の Firehose ストリーム [full-logs / glue-iceberg] と統一)。
+    buffering_interval = 300 # 秒
+    buffering_size     = 5   # MiB
 
     # 失敗データのみを中間/バックアップ S3 へ退避する
     s3_backup_mode = "FailedDataOnly"
@@ -66,8 +66,8 @@ resource "aws_kinesis_firehose_delivery_stream" "s3tables_iceberg" {
     s3_configuration {
       role_arn            = aws_iam_role.firehose_s3tables.arn
       bucket_arn          = aws_s3_bucket.full_logs.arn
-      buffering_interval  = 60
-      buffering_size      = 64
+      buffering_interval  = 300
+      buffering_size      = 5
       compression_format  = "GZIP"
       prefix              = "firehose-s3tables-iceberg/"
       error_output_prefix = "firehose-s3tables-iceberg-errors/"
