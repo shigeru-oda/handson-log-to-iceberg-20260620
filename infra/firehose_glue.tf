@@ -54,7 +54,7 @@ resource "aws_kinesis_firehose_delivery_stream" "glue_iceberg" {
     role_arn    = aws_iam_role.firehose_glue.arn
     catalog_arn = local.firehose_glue_catalog_arn
 
-    # バッファリング設定 (シンプルかつ有効な値)。
+    # バッファリング設定 (他の Firehose ストリーム [full-logs / s3tables-iceberg] と統一)。
     buffering_size     = 5
     buffering_interval = 300
 

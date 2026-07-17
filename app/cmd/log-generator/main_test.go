@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"math/rand"
 	"strings"
@@ -39,11 +40,11 @@ func TestRunLoopWritesBoundedJSONLines(t *testing.T) {
 
 	// sleepFn は実際には待機せず、呼び出された間隔を記録する。
 	var sleepDurations []time.Duration
-	sleepFn := func(d time.Duration) {
+	sleepFn := func(_ context.Context, d time.Duration) {
 		sleepDurations = append(sleepDurations, d)
 	}
 
-	if err := runLoop(&buf, rng, sched, nowFn, sleepFn, maxIterations); err != nil {
+	if err := runLoop(context.Background(), &buf, rng, sched, nowFn, sleepFn, maxIterations); err != nil {
 		t.Fatalf("runLoop returned error: %v", err)
 	}
 
@@ -99,5 +100,70 @@ func TestRunLoopWritesBoundedJSONLines(t *testing.T) {
 		if d != interval {
 			t.Errorf("sleep call %d: got %v, want %v", i, d, interval)
 		}
+	}
+}
+
+// TestRunLoopStopsOnContextCancellation は SIGTERM 相当のキャンセルが発生した際、
+// runLoop がその反復の書き込みとスリープを終えた直後にエラーなく終了することを
+// 検証する (Req 2.2: ECS タスク停止時の graceful shutdown)。
+func TestRunLoopStopsOnContextCancellation(t *testing.T) {
+	const interval = 10 * time.Millisecond
+
+	var buf bytes.Buffer
+	rng := rand.New(rand.NewSource(1))
+	sched := scheduler.Scheduler{Interval: interval}
+
+	base := time.Date(2026, 6, 20, 12, 0, 0, 0, time.UTC)
+	calls := 0
+	nowFn := func() time.Time {
+		t := base.Add(time.Duration(calls) * interval)
+		calls++
+		return t
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// 3 回目のスリープ呼び出しでキャンセルし、無限ループ (maxIterations=0) が
+	// 有限回で終了することを検証する。
+	sleepCalls := 0
+	sleepFn := func(_ context.Context, _ time.Duration) {
+		sleepCalls++
+		if sleepCalls == 3 {
+			cancel()
+		}
+	}
+
+	if err := runLoop(ctx, &buf, rng, sched, nowFn, sleepFn, 0); err != nil {
+		t.Fatalf("runLoop returned error: %v", err)
+	}
+
+	if sleepCalls != 3 {
+		t.Errorf("expected exactly 3 sleep calls before stopping, got %d", sleepCalls)
+	}
+
+	out := buf.String()
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 JSON lines written before stopping, got %d: %q", len(lines), out)
+	}
+}
+
+// TestRunLoopDoesNotHTMLEscapeBody は JSON 出力が body 中の '<', '>', '&' を
+// \u003c 等へエスケープしないことを検証する (SetEscapeHTML(false))。
+func TestRunLoopDoesNotHTMLEscapeBody(t *testing.T) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+
+	if err := enc.Encode(map[string]string{"body": "a<b>c&d"}); err != nil {
+		t.Fatalf("encode failed: %v", err)
+	}
+
+	out := buf.String()
+	if strings.Contains(out, `\u003c`) || strings.Contains(out, `\u003e`) || strings.Contains(out, `\u0026`) {
+		t.Errorf("expected raw HTML characters, got escaped output: %q", out)
+	}
+	if !strings.Contains(out, "a<b>c&d") {
+		t.Errorf("expected literal body text in output, got %q", out)
 	}
 }

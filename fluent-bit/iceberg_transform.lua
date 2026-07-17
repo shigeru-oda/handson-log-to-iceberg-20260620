@@ -109,6 +109,8 @@ function transform(tag, ts, record)
 
     if type(raw_ts) == "string" and string.len(raw_ts) >= 10 then
         out["ingest_date"] = string.sub(raw_ts, 1, 10)
+    else
+        out["ingest_date"] = "unknown"
     end
 
     return 2, ts, out

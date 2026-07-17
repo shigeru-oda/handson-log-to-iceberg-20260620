@@ -35,7 +35,7 @@ resource "aws_kinesis_firehose_delivery_stream" "full_logs" {
     # 配信失敗レコード (エラー出力) の退避先プレフィックス。
     error_output_prefix = "errors/!{firehose:error-output-type}/"
 
-    # バッファリング設定 (シンプルかつ有効な値)。
+    # バッファリング設定 (他の Firehose ストリーム [glue-iceberg / s3tables-iceberg] と統一)。
     buffering_size     = 5
     buffering_interval = 300
 

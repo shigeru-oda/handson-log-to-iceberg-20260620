@@ -116,7 +116,7 @@ export ECS_SERVICE=$(terraform output -raw ecs_service_name)                    
 - [ ] **1-2-1. カスタム Fluent Bit イメージ用 Dockerfile を用意**
   例 (`fluent-bit/Dockerfile`):
   ```dockerfile
-  FROM public.ecr.aws/aws-observability/aws-for-fluent-bit:stable
+  FROM public.ecr.aws/aws-observability/aws-for-fluent-bit:3.4.8
   COPY custom.conf /fluent-bit/etc/custom.conf
   ```
 
