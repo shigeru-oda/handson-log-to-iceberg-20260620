@@ -1,49 +1,58 @@
 # handson-log-to-iceberg
 
-この手順は[BigData-JAWS 勉強会 #32 Apache Icebergハンズオン会](https://jawsug-bigdata.connpass.com/event/391438/)のイベントにて利用するハンズオン資料です。
-
-Amazon Elastic Container Service (Amazon ECS) Fargate 上で発生するLogを以下へ配信・蓄積するハンズオンです。
-
-- Amazon Simple Storage Service (Amazon S3)
-  - 全 severity のログを無加工で格納 (raw ログ)
-- Amazon CloudWatch Logs
-  - エラーログ (ERROR/FATAL) のみ格納
-- Amazon Simple Storage Service (Amazon S3) + AWS Glue Data Catalog (セルフマネージド Apache Iceberg テーブル)
-  - エラーログ (ERROR/FATAL) のみ格納
-- Amazon S3 Tables (マネージド Apache Iceberg テーブル)
-  - エラーログ (ERROR/FATAL) のみ格納
-
-インフラはすべて Terraform (`infra/`) で構築します、リージョンは**ap-northeast-1 (東京)** を対象とします。
+Amazon Elastic Container Service (Amazon ECS) Fargate 上の Go 製ダミー OTel ログジェネレーターが出力するログを、FireLens (Fluent Bit) で severity ごとに振り分け、Amazon Data Firehose 経由で Amazon Simple Storage Service (Amazon S3) / Amazon CloudWatch Logs / Apache Iceberg (Amazon S3 Tables・AWS Glue) へ配信・蓄積するハンズオンです。
+インフラはすべて Terraform (`infra/`) で構築します、リージョンは **ap-northeast-1 (東京)** を対象とします。
 
 ## リポジトリ構成
 
-| パス                                 | 内容                                                                                                                                                                                                                                      |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/`                               | Go 製ダミー OTel ログジェネレーター + マルチステージ `Dockerfile`                                                                                                                                                                         |
-| `fluent-bit/`                        | FireLens (Fluent Bit) 設定。`custom.conf` (severity ベースルーティング)、`parsers.conf` (アプリ JSON を `log` から展開する parser)、`iceberg_transform.lua` (Iceberg 向けスキーマ整形)、`Dockerfile` (これらをベイクするカスタムイメージ) |
-| `infra/`                             | Terraform 構成一式 (Amazon VPC / Amazon ECS / Amazon Data Firehose / Amazon S3 / Amazon S3 Tables / AWS Glue / AWS IAM など)                                                                                                              |
-| `infra/verify.sh`                    | Terraform 構成のスナップショット静的検証スクリプト                                                                                                                                                                                        |
-| `docs/e2e-verification-checklist.md` | デプロイ後の手動 E2E 検証チェックリスト                                                                                                                                                                                                   |
+| パス | 内容 |
+| --- | --- |
+| `app/` | Go 製ダミー OTel ログジェネレーター + マルチステージ `Dockerfile` |
+| `fluent-bit/` | FireLens (Fluent Bit) 設定。`custom.conf` (severity ベースルーティング)、`parsers.conf` (アプリ JSON を `log` から展開する parser)、`iceberg_transform.lua` (Iceberg 向けスキーマ整形)、`Dockerfile` (これらをベイクするカスタムイメージ) |
+| `infra/` | Terraform 構成一式 (Amazon VPC / Amazon ECS / Amazon Data Firehose / Amazon S3 / Amazon S3 Tables / AWS Glue / AWS IAM など) |
 
 ## Infrastructure (Terraform)
 
 Terraform 構成は `infra/` ディレクトリに配置されています。
 
 > **必要バージョン**
-> Terraform `>= 1.5`、AWS provider `~> 6.4` (`hashicorp/aws`)
+> Terraform `>= 1.5`、AWS provider `~> 6.4` (`hashicorp/aws`)。Amazon S3 Tables テーブルのスキーマ
+> 定義 (`aws_s3tables_table` の `metadata { iceberg { schema { … } } }`) は provider v6.4 で
+> 追加されたため必須です。これにより Amazon S3 Tables テーブルの Iceberg メタデータ
+> (`metadata_location`) が作成時に初期化され、Amazon Data Firehose の Iceberg 配信が成立します
+> (未定義だと Amazon Athena が `missing [metadata_location]` で失敗します)。
 
-![](./image.svg)
+### ステート管理
+
+本プロジェクトは Terraform のローカルバックエンドを使用しています。
+
+> **運用制約: 同時実行の禁止**
+>
+> ローカルバックエンドは自動ロック機構や同時アクセスの検知・防止機能を提供しません。
+> 複数のオペレーターが同時に `terraform apply` / `terraform plan` を実行すると、
+> ステートファイルの破損やリソースの不整合が発生する可能性があります。
+>
+> **必ず一人ずつ順番に Terraform コマンドを実行してください。**
+
+### ローカルでの使い方
+
+```bash
+cd infra
+terraform init
+terraform plan
+terraform apply
+```
 
 ---
 
 # 作業用 Amazon EC2 インスタンス上でハンズオンを実行する
 
-ローカル環境に Terraform / Go / Docker を導入せず、AWS 内に作成した 作業用 Amazon Elastic Compute Cloud (Amazon EC2) インスタンス の中でハンズオン (イメージのビルド & プッシュ、`terraform apply`、検証) を完結させる手順です。
+ローカル環境に Terraform / Go / Docker を導入せず、AWS 内に作成した **作業用 Amazon Elastic Compute Cloud (Amazon EC2) インスタンス** の中でハンズオン (イメージのビルド & プッシュ、`terraform apply`、検証) を完結させる手順です。
 
 > **なぜ Amazon EC2 を使うのか**
->
 > - コンテナのビルド対象は `linux/amd64` です。**x86_64 の Amazon EC2** 上で実行すればエミュレーションなしでネイティブにビルドできます。
 > - 必要なツール (Go / Docker / Terraform / AWS Command Line Interface (AWS CLI)) を 1 台に閉じ込められ、後片付けが容易です。
+> - 接続は **AWS Systems Manager (SSM) Session Manager** を使うため、SSH キーや受信ポート (22番) の開放が不要です。
 
 ## 全体の流れ
 
@@ -52,17 +61,22 @@ Terraform 構成は `infra/` ディレクトリに配置されています。
 3. SSM Session Manager で Amazon EC2 に接続する
 4. Amazon EC2 内に必要ツールをインストールする
 5. リポジトリを取得し、ハンズオンを実行する
-6. 後片付け (Amazon EC2・IAM・AWS リソースの削除)
+6. 検証 (E2E)
+7. 後片付け (Amazon EC2・IAM・AWS リソースの削除)
 
 ## 前提
 
-- AWS アカウントを保有し、対象リージョンは ap-northeast-1。
+- AWS アカウントを保有し、対象リージョンは **ap-northeast-1**。
 - AWS マネジメントコンソールにログインできること。
-- AdministratorAccess権限を持つこと。
+- Amazon EC2 / IAM を作成できる権限を持つこと。
 
 ## ステップ 0: Amazon EC2 用 IAM ロール (インスタンスプロファイル) の作成
 
-作業用 Amazon EC2 はハンズオンの全 AWS リソース (Amazon VPC・Amazon ECS・Amazon Data Firehose・Amazon S3・Amazon S3 Tables・AWS Glue・IAM ロール など) を Terraform で作成します。
+作業用 Amazon EC2 はハンズオンの全 AWS リソース (Amazon VPC・Amazon ECS・Amazon Data Firehose・Amazon S3・Amazon S3 Tables・AWS Glue・**IAM ロール** など) を Terraform で作成します。そのため Amazon EC2 には十分な権限が必要です。
+
+> **重要 (権限について)**
+> 本ハンズオンは IAM ロールも作成するため、`PowerUserAccess` では不足します。簡便さを優先し、ここでは **`AdministratorAccess`** を付与します。これは非常に広い権限です。**ハンズオン専用とし、完了後は必ず削除してください** (本番運用では最小権限へ絞ること)。
+> あわせて、SSM Session Manager 接続のために **`AmazonSSMManagedInstanceCore`** を付与します。
 
 ### IAM 準備 (マネジメントコンソール)
 
@@ -92,10 +106,11 @@ Terraform 構成は `infra/` ディレクトリに配置されています。
 4. **アプリケーションおよび OS イメージ (AMI)**: Amazon Linux → **Amazon Linux 2023 (64 ビット x86)** を選択。
 5. **インスタンスタイプ**: `t3.large` を選択。
 6. **キーペア (ログイン)**: SSM で接続するため「**キーペアなしで続行**」を選択 (SSH は使いません)。
-7. **ネットワーク設定**: 既定の Amazon VPC / サブネットでよい。「**パブリック IP の自動割り当て**」を **有効** にする。セキュリティグループは**default**を利用
+7. **ネットワーク設定**: 既定の Amazon VPC / サブネットでよい。「**パブリック IP の自動割り当て**」を **有効** にする。セキュリティグループは受信ルール不要 (デフォルトのアウトバウンド全許可のみで SSM 接続が可能)。
 8. **ストレージを設定**: ルートボリュームを **30 GiB / gp3** に変更。
 9. **高度な詳細** を展開:
    - **IAM インスタンスプロファイル**: `handson-iceberg-ec2-role` を選択。
+   - **メタデータのバージョン**: 「V2 のみ (トークン必須)」を推奨。
 10. 右側の概要を確認し「**インスタンスを起動**」をクリック。
 11. インスタンス一覧画面で、ステータスチェックが **2/2** になるまで待つ。
 
@@ -109,11 +124,10 @@ Terraform 構成は `infra/` ディレクトリに配置されています。
 2. 画面上部の「接続」ボタンをクリック。
 3. 「Session Manager」タブを選択し、「接続」をクリック。
 
-ブラウザ内にターミナルが開きます。以降のコマンドは Amazon EC2 内で実行します。
+ブラウザ内にターミナルが開きます。以降のコマンドは Amazon EC2 内で実行します (必要に応じて `sudo` を使用)。
 
 > **AWS CLI から接続する場合 (任意)**
 > 手元の端末に Session Manager プラグインが導入済みであれば、インスタンス一覧画面で確認できるインスタンス ID を使って以下でも接続できます。
->
 > ```bash
 > aws ssm start-session --region ap-northeast-1 --target <インスタンスID>
 > ```
@@ -149,7 +163,7 @@ go version
 terraform version
 ```
 
-> Docker はグループ設定 (`usermod` + 再接続) を省略し、**`docker` コマンドは常に `sudo` を付けて実行**します。
+> Docker はグループ設定 (`usermod` + 再接続) を省略し、**`docker` コマンドは常に `sudo` を付けて実行**します。`docker login` を `sudo` で行うと認証情報は `/root/.docker/config.json` に保存されるため、以降の `docker build` / `docker push` も同じく `sudo` で実行してください (sudo と非 sudo を混在させないこと)。
 
 ## ステップ 4: リポジトリを取得してハンズオンを実行する
 
@@ -180,6 +194,9 @@ sudo docker build --platform linux/amd64 -t "${ECR_REGISTRY}/log-generator:lates
 sudo docker push "${ECR_REGISTRY}/log-generator:latest"
 
 # --- 3) カスタム Fluent Bit イメージ (custom.conf 等をベイク) のビルド & プッシュ ---
+# fluent-bit/Dockerfile はリポジトリに含まれており、custom.conf に加えて
+# "log" 文字列の JSON 展開用 parser (parsers.conf) と、Iceberg スキーマ整形用の
+# Lua スクリプト (iceberg_transform.lua) を /fluent-bit/etc/ へ COPY する。
 sudo docker build --platform linux/amd64 -t "${ECR_REGISTRY}/custom-fluent-bit:latest" ./fluent-bit
 sudo docker push "${ECR_REGISTRY}/custom-fluent-bit:latest"
 
@@ -187,9 +204,22 @@ sudo docker push "${ECR_REGISTRY}/custom-fluent-bit:latest"
 cd infra
 terraform init
 terraform validate
+# イメージは既定で「実行アカウント/リージョンの ECR」から自動解決される
+# (リポジトリ名 log-generator / custom-fluent-bit、タグ latest)。
+# そのため通常は -var でのイメージ指定は不要。
 terraform apply
-# applyでerrorになった場合には後続へ
 ```
+
+> **イメージ URI を明示したい場合 (任意)**
+> 別リポジトリ名・別タグ・別レジストリのイメージを使う場合のみ、以下のように上書きできます。
+> ```bash
+> terraform apply \
+>   -var="app_image=${ECR_REGISTRY}/log-generator:latest" \
+>   -var="fluent_bit_image=${ECR_REGISTRY}/custom-fluent-bit:latest" \
+>   -var="log_interval_ms=1000"
+> ```
+> 関連変数: `app_repository_name` (既定 `log-generator`) / `fluent_bit_repository_name` (既定 `custom-fluent-bit`) / `image_tag` (既定 `latest`)。
+> なお、レジストリ名を含まないタグだけ (例: `log-generator:latest`) を指定すると Docker Hub と解釈されて pull に失敗するため、上書きする場合は必ず完全な Amazon ECR URI を指定すること。
 
 > **AWS Lake Formation が有効なアカウントでの追加手順 (重要)**
 > アカウントで AWS Lake Formation が有効化され AWS Glue Data Catalog を統制している場合、上の `terraform apply` は権限エラーで失敗します。その場合は次の「Lake Formation 権限の事前付与」を実施してから再度 `terraform apply` してください。
@@ -201,21 +231,7 @@ terraform apply
 - `Insufficient Lake Formation permission(s): Required Describe on otel_log_pipeline_dev_logs` (AWS Glue データベース読み取り時)
 - `Role ... is not authorized to perform: glue:GetTable ...` (Amazon Data Firehose ストリーム作成時)
 
-`AdministratorAccess` ロールでも Lake Formation の権限は別管理です。以下を実施してから再度 `terraform apply` してください。
-
-#### 0) Lake Formation が Data Catalog を統制しているか確認する (CLI)
-
-アカウントの Data Catalog デフォルト設定 (`CreateDatabaseDefaultPermissions` / `CreateTableDefaultPermissions`) で判定できます。
-
-```bash
-export AWS_REGION=ap-northeast-1
-
-aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
-  --query 'DataLakeSettings.{CreateDatabaseDefaultPermissions:CreateDatabaseDefaultPermissions,CreateTableDefaultPermissions:CreateTableDefaultPermissions}'
-```
-
-- 両方とも **空配列 `[]`** → 「Use only IAM access control」が無効。Lake Formation が新規 DB/テーブルを完全に統制しているため、本節の事前権限付与が必要です。
-- **`[{"Principal":{"DataLakePrincipalIdentifier":"IAM_ALLOWED_PRINCIPALS"},"Permissions":["ALL"]}]`** が入っている → IAM 権限のみで動く後方互換モード。この場合は通常、事前権限付与なしで `terraform apply` が成功します。。
+`AdministratorAccess` ロールでも Lake Formation の権限は別管理です。以下を実施してから (再) `terraform apply` してください。
 
 #### 共通変数
 
@@ -223,6 +239,7 @@ aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
 export AWS_REGION=ap-northeast-1
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
+# 命名はデフォルト (project=otel-log-pipeline / environment=dev) に基づく
 S3TABLES_BUCKET=otel-log-pipeline-dev-s3tables
 NAMESPACE=otel_log_pipeline_dev
 S3TABLES_TABLE=error_logs
@@ -239,9 +256,8 @@ S3TABLES_CATALOG=${ACCOUNT_ID}:s3tablescatalog/${S3TABLES_BUCKET}
 aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
   --query 'DataLakeSettings.DataLakeAdmins'
 
-# terraform apply を実行するロールの ARN
-export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-MYROLE="arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role"
+# 実行中のロール (作業用 Amazon EC2 のインスタンスプロファイルロール) の ARN
+MYROLE=arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role
 echo "$MYROLE"
 
 # 既存設定を保持しつつ DataLakeAdmins に自分を追記して反映
@@ -251,10 +267,12 @@ aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
 aws lakeformation put-data-lake-settings --region "$AWS_REGION" \
   --data-lake-settings file:///tmp/lf-settings.json
 
-# 反映確認 (既存 + 自分のRoleになる)
+# 反映確認 (既存 + 自分の 2 つになる)
 aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
   --query 'DataLakeSettings.DataLakeAdmins'
 ```
+
+> コンソールでも可: Lake Formation → Administration → Administrative roles and tasks → Data lake administrators に実行ロールを追加 (既存は残す)。
 
 #### 2) Amazon S3 Tables の namespace / table を先に作成
 
@@ -280,7 +298,7 @@ aws lakeformation grant-permissions --region "$AWS_REGION" \
   --permissions DESCRIBE \
   --resource "{\"Database\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"Name\":\"$NAMESPACE\"}}"
 
-# table に ALL
+# table に ALL (最小化する場合は DESCRIBE SELECT INSERT ALTER)
 aws lakeformation grant-permissions --region "$AWS_REGION" \
   --principal DataLakePrincipalIdentifier="$FIREHOSE_S3TABLES_ROLE" \
   --permissions ALL \
@@ -301,128 +319,269 @@ aws lakeformation list-permissions --region "$AWS_REGION" \
   --query 'PrincipalResourcePermissions[].Permissions'   # => [["ALL"]]
 ```
 
-#### 4) 残りをデプロイ
+> AWS Glue セルフマネージド側 (database `otel_log_pipeline_dev_logs` / table `errors`) の Amazon Data Firehose ロールへの grant は Terraform (`infra/lakeformation.tf`) で管理されるため CLI 付与は不要です。手順1で実行ロールが Lake Formation 管理者になっていれば、次の `terraform apply` 時に自動で付与されます。
 
-```bashy
-terraform apply
-```
+#### 4) 検証 (Amazon Athena) と後片付け (`terraform destroy`) で使うロールへ権限を付与
 
-#### 5) Athena でクエリするロールへ SELECT を付与 (Lake Formation 有効アカウントのみ)
+Lake Formation が完全管理モード (`CreateTableDefaultPermissions` が空) の場合、手順1で Data Lake 管理者に追加したロールであっても、**テーブルデータへの実効権限は別途付与が必要**です (管理者・grant option はあっても実効権限がないと、Amazon Athena は `COLUMN_NOT_FOUND` で、`terraform destroy` は `Insufficient Lake Formation permission(s): Required Drop on errors` で失敗します)。
 
-Lake Formation が完全管理モード (`CreateTableDefaultPermissions` が空) の場合、Data Lake 管理者であっても **テーブルデータへの SELECT は自動付与されません**。この状態で Amazon Athena から Iceberg テーブルを検索すると、次のエラーになります。
-
-```
-COLUMN_NOT_FOUND: line 1:8: Relation contains no accessible columns
-```
-
-これはスキーマ欠落ではなく、クエリ実行ロールがどの列にも SELECT 実効権限を持たない (SELECT が grant option にしか無い) ために全列がフィルタされる症状です。クエリを実行するロールへ SELECT / DESCRIBE を付与します。
+検証 (`SELECT`/`DESCRIBE`) と destroy (`DROP`/`ALTER`/`DELETE` 等) の両方で使うロールへ、まとめて付与しておきます。作業用 Amazon EC2 上で検証・デプロイ・後片付けを行う場合は `handson-iceberg-ec2-role` (ステップ 0 で作成したインスタンスプロファイルのロール) に付与します。ローカル端末や別ロールで実行する場合は、そのロールの ARN に置き換えてください。
 
 ```bash
-# クエリを実行する IAM/AWS IAM Identity Center (SSO) ロールの ARN を指定する。
-# 例: IAM Identity Center の AdministratorAccess ロールの実体 ARN を取得
-QUERY_ROLE=$(aws iam list-roles \
-  --query "Roles[?contains(RoleName,'AWSReservedSSO_AWSAdministratorAccess')].Arn" \
-  --output text)
-echo "$QUERY_ROLE"
+QUERY_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role
 
-# AWS Glue セルフマネージド側 (database otel_log_pipeline_dev_logs / table errors) へ付与
+# AWS Glue セルフマネージド側: table へ検証+destroy で必要な実効権限を付与
 aws lakeformation grant-permissions --region "$AWS_REGION" \
   --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
-  --permissions SELECT DESCRIBE \
+  --permissions SELECT DESCRIBE DROP ALTER DELETE INSERT \
   --resource '{"Table":{"DatabaseName":"otel_log_pipeline_dev_logs","Name":"errors"}}'
 
-# 付与確認 (実効 Permissions に SELECT / DESCRIBE が入る)
+# AWS Glue セルフマネージド側: database へ destroy で必要な実効権限を付与
+aws lakeformation grant-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions DESCRIBE DROP CREATE_TABLE \
+  --resource '{"Database":{"Name":"otel_log_pipeline_dev_logs"}}'
+
+# Amazon S3 Tables 側 (federated カタログ): namespace (database) に DESCRIBE
+aws lakeformation grant-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions DESCRIBE \
+  --resource "{\"Database\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"Name\":\"$NAMESPACE\"}}"
+
+# Amazon S3 Tables 側 (federated カタログ): table へ検証+destroy で必要な実効権限を付与
+aws lakeformation grant-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions SELECT DESCRIBE DROP ALTER DELETE \
+  --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"$NAMESPACE\",\"Name\":\"$S3TABLES_TABLE\"}}"
+```
+
+付与確認 (`Permissions` に実効権限が入っていることを確認する。`PermissionsWithGrantOption` だけでは実行できない):
+
+```bash
 aws lakeformation list-permissions --region "$AWS_REGION" \
   --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
   --resource '{"Table":{"DatabaseName":"otel_log_pipeline_dev_logs","Name":"errors"}}' \
   --query 'PrincipalResourcePermissions[].Permissions'
+
+aws lakeformation list-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"$NAMESPACE\",\"Name\":\"$S3TABLES_TABLE\"}}" \
+  --query 'PrincipalResourcePermissions[].Permissions'
 ```
 
-> Amazon S3 Tables 側 (namespace `otel_log_pipeline_dev` / table `error_logs`) も Amazon Athena で検索したい場合は、federated カタログ ID を指定して同様に付与します。
->
-> ```bash
-> aws lakeformation grant-permissions --region "$AWS_REGION" \
->   --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
->   --permissions SELECT DESCRIBE \
->   --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"$NAMESPACE\",\"Name\":\"$S3TABLES_TABLE\"}}"
-> ```
->
-> **Amazon S3 Tables を Amazon Athena でクエリする際の SQL 記法 (重要)**
-> Amazon S3 Tables の federated カタログ (`s3tablescatalog/<テーブルバケット名>`) は、Amazon Athena の
-> データカタログ一覧には独立したカタログとして現れず、常に `AwsDataCatalog` 配下のサブ
-> カタログとして扱われます。そのため SQL の `FROM` 句には
-> **`"s3tablescatalog/<テーブルバケット名>"."<namespace>"."<table>"` の 3 階層パス**を
-> 書いてください (コンソールでデータソース/データベースを選択していても、クエリ文字列側に
-> カタログ名を含める必要があります)。例:
->
-> ```sql
-> SELECT count(*) FROM "s3tablescatalog/otel-log-pipeline-dev-s3tables"."otel_log_pipeline_dev"."error_logs";
-> ```
->
-> また、Amazon Athena のクエリ結果出力先がアカウントリージョナルネームスペースバケット
-> (`[prefix]-[account]-[region]-an` 形式) だと、`MissingNamespaceHeader` エラーになる場合が
-> あります。その場合はワークグループのクエリ結果出力先を、通常の Amazon S3 バケット (例: 本ハンズ
-> オンの full-logs バケット配下 `athena-results/`) に変更してください。詳細は
-> `docs/e2e-verification-checklist.md` の「4-B」を参照してください。
+> これにより、後片付け (ステップ 6) で `terraform destroy` 実行前に改めて Lake Formation 権限を付与する必要はありません。
 
-デプロイ後の動作確認 (Amazon S3 に全 severity が蓄積される / Amazon CloudWatch に ERROR・FATAL のみ / Iceberg テーブルにエラーログのみ) は **`docs/e2e-verification-checklist.md`** のチェックリストに沿って実施してください。
+#### 5) 残りをデプロイ
 
-## ステップ 5: 後片付け
+```bash
+# イメージは既定で実行アカウント/リージョンの Amazon ECR から自動解決されるため -var は不要。
+terraform apply
+```
+
+デプロイ後の動作確認は次の「ステップ 5: 検証 (E2E)」に沿って実施してください。
+
+## ステップ 5: 検証 (E2E)
+
+デプロイした Amazon ECS タスクが実際に稼働し、severity ごとに正しく振り分けられて各配信先に蓄積されていることを確認します。
+
+### 前提: 環境変数の設定
+
+```bash
+export AWS_REGION=ap-northeast-1
+export FULL_LOGS_BUCKET=$(terraform output -raw full_logs_bucket_name)
+export ERROR_LOG_GROUP=$(terraform output -raw cloudwatch_logs_group_name)
+export GLUE_DATABASE=$(terraform output -raw glue_database_name)
+export GLUE_TABLE=$(terraform output -raw glue_iceberg_table_name)
+export S3TABLES_BUCKET=$(terraform output -raw s3tables_bucket_arn | cut -d/ -f2)
+export S3TABLES_NAMESPACE=$(terraform output -raw s3tables_namespace)
+export S3TABLES_TABLE=$(terraform output -raw s3tables_table_name)
+export ECS_CLUSTER=$(terraform output -raw ecs_cluster_name)
+export ECS_SERVICE=$(terraform output -raw ecs_service_name)
+```
+
+### 検証 1: Amazon S3 (full-logs) に全 severity が無加工で蓄積される
+
+```bash
+aws s3api list-objects-v2 --bucket "$FULL_LOGS_BUCKET" --prefix "raw/" \
+  --region ap-northeast-1 --max-items 50 \
+  --query 'Contents[].Key' --output table
+```
+期待結果: `raw/YYYY/MM/DD/HH/` 配下にオブジェクトが存在する。
+
+続いて、最新オブジェクトをダウンロードして severity の種類を確認します。
+
+```bash
+# 最新オブジェクトのキーを取得してダウンロード
+KEY=$(aws s3api list-objects-v2 --bucket "$FULL_LOGS_BUCKET" --prefix "raw/" \
+      --region ap-northeast-1 --query 'sort_by(Contents,&LastModified)[-1].Key' --output text)
+aws s3 cp "s3://${FULL_LOGS_BUCKET}/${KEY}" /tmp/full-logs-sample.gz --region ap-northeast-1
+
+# severityText の出現種類を集計
+gunzip -c /tmp/full-logs-sample.gz \
+  | python3 -c "import sys,json,collections; c=collections.Counter(json.loads(l)['severityText'] for l in sys.stdin if l.strip()); print(dict(c))"
+```
+期待結果: `TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`FATAL` のうち複数 (理想的には全て) の severity が出現し、**ERROR/FATAL 以外の非エラーログも必ず含まれている** こと (= severity で絞り込まれていない)。1オブジェクトで一部 severity が出ない場合は、複数オブジェクトを取得するか稼働時間を延ばして再確認する。
+
+### 検証 2: Amazon CloudWatch Logs (errors) に ERROR/FATAL のみが現れる
+
+```bash
+aws logs filter-log-events \
+  --log-group-name "$ERROR_LOG_GROUP" --region ap-northeast-1 \
+  --log-stream-name-prefix "ecs-" \
+  --start-time "$(( ( $(date +%s) - 3600 ) * 1000 ))" \
+  --max-items 30 \
+  --query 'events[].message' --output json \
+  | python3 -c "import sys,json; [print(json.loads(m)['severityText']) for m in json.load(sys.stdin)]"
+```
+期待結果: 出力される全レコードが `ERROR` または `FATAL` のみ (`INFO`/`WARN`/`DEBUG`/`TRACE` は 0 件)。
+
+
+### 検証 3: Iceberg テーブル (Amazon S3 Tables / AWS Glue) にエラーログのみが存在する
+
+Amazon Athena (エンジン v3) に AWS CLI でクエリを投げます。
+
+```bash
+export ATHENA_OUTPUT="s3://${FULL_LOGS_BUCKET}/athena-results/"
+
+# クエリを実行し、完了を待って結果を表示する簡易ヘルパー
+run_athena() {
+  local sql="$1"
+  local qid
+  qid=$(aws athena start-query-execution \
+        --region ap-northeast-1 \
+        --query-string "$sql" \
+        --result-configuration "OutputLocation=${ATHENA_OUTPUT}" \
+        --query QueryExecutionId --output text)
+
+  while :; do
+    state=$(aws athena get-query-execution --region ap-northeast-1 \
+             --query-execution-id "$qid" \
+             --query 'QueryExecution.Status.State' --output text)
+    case "$state" in
+      SUCCEEDED|FAILED|CANCELLED) break ;;
+    esac
+    sleep 2
+  done
+
+  if [ "$state" != "SUCCEEDED" ]; then
+    echo "Query $state" >&2
+    aws athena get-query-execution --region ap-northeast-1 --query-execution-id "$qid" \
+      --query 'QueryExecution.Status.StateChangeReason' --output text >&2
+    return 1
+  fi
+
+  aws athena get-query-results --region ap-northeast-1 --query-execution-id "$qid" \
+    --query 'ResultSet.Rows[].Data[].VarCharValue' --output table
+}
+
+# AWS Glue セルフマネージド側
+run_athena "SELECT count(*) AS total,
+                   count_if(severity_number >= 17) AS error_rows,
+                   count_if(severity_number < 17) AS non_error_rows
+            FROM \"otel_log_pipeline_dev_logs\".\"errors\";"
+
+# Amazon S3 Tables 側 (federated カタログのため 3 階層パスで参照)
+run_athena "SELECT count(*) AS total,
+                   count_if(severity_number >= 17) AS error_rows,
+                   count_if(severity_number < 17) AS non_error_rows
+            FROM \"s3tablescatalog/otel-log-pipeline-dev-s3tables\".\"otel_log_pipeline_dev\".\"error_logs\";"
+```
+期待結果: 両テーブルとも `total > 0` かつ `error_rows = total` かつ `non_error_rows = 0` (= エラーログのみが行として存在)。
+
+
+### 総合判定
+
+- [ ] Amazon S3 full-logs に全 severity が蓄積されている
+- [ ] Amazon CloudWatch Logs (errors) に ERROR/FATAL のみが現れる
+- [ ] Amazon S3 Tables Iceberg テーブルにエラーログのみが行として存在する
+- [ ] AWS Glue Iceberg テーブルにエラーログのみが行として存在する
+
+すべてチェックできれば、ステージ 1 (Amazon S3 / Amazon CloudWatch) とステージ 2 (Amazon S3 Tables / AWS Glue Iceberg) のルーティングと蓄積が要件どおり機能していることを確認できたことになります。
+
+
+## ステップ 6: 後片付け
 
 課金リソースを残さないよう、検証が終わったら必ず削除します。
 
-> **AWS Lake Formation 有効アカウントでの事前権限付与 (destroy 前・重要)**
-> Lake Formation が完全管理モードの場合、`AdministratorAccess` や Data Lake 管理者であっても
-> テーブル/DB の `DROP` などの**実効権限**は Lake Formation 側で別管理です。これが無いと `terraform destroy`
-> が次のエラーで失敗します。
->
-> ```
-> AccessDeniedException: Insufficient Lake Formation permission(s): Required Drop on errors
-> ```
->
-> （apply 時の SELECT/INSERT 不足と同じ「grant option はあるが実効権限が無い」症状です。）
->
-> なお、この付与を Terraform (`aws_lakeformation_permissions`) で管理しても destroy は解決しません。
-> grant リソースが対象テーブルに依存するため、`terraform destroy` ではテーブルより**先に grant が
-> revoke** され、結局テーブル削除時に `DROP` を失います（鶏卵問題）。そのため destroy 直前に CLI で
-> 実行ロールへ付与します。
->
-> ```bash
-> export AWS_REGION=ap-northeast-1
-> # terraform destroy を実行するロール ARN
-> # (本ハンズオンは作業用 Amazon EC2 のインスタンスプロファイル `handson-iceberg-ec2-role` から実行するため、
-> #  そのロールの ARN を指定する。SSO ユーザーのローカル端末から直接 destroy する場合は、
-> #  代わりに実行中の SSO ロールの実体 ARN を指定すること)
-> ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-> EXEC_ROLE="arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role"
-> S3TABLES_CATALOG=${ACCOUNT_ID}:s3tablescatalog/otel-log-pipeline-dev-s3tables
->
-> # AWS Glue セルフマネージド側: table と database へ削除に必要な実効権限を付与
-> aws lakeformation grant-permissions --region "$AWS_REGION" \
->   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
->   --permissions DROP ALTER DELETE DESCRIBE INSERT SELECT \
->   --resource '{"Table":{"DatabaseName":"otel_log_pipeline_dev_logs","Name":"errors"}}'
-> aws lakeformation grant-permissions --region "$AWS_REGION" \
->   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
->   --permissions DROP DESCRIBE CREATE_TABLE \
->   --resource '{"Database":{"Name":"otel_log_pipeline_dev_logs"}}'
->
-> # Amazon S3 Tables 側 (federated カタログ) も同様に付与
-> aws lakeformation grant-permissions --region "$AWS_REGION" \
->   --principal DataLakePrincipalIdentifier="$EXEC_ROLE" \
->   --permissions DROP ALTER DELETE DESCRIBE \
->   --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"otel_log_pipeline_dev\",\"Name\":\"error_logs\"}}"
-> ```
-
 ```bash
-# 1) Terraform で作成した AWS リソースを削除 (Amazon EC2 内 infra/ ディレクトリで)
 cd ~/handson-log-to-iceberg/infra
-terraform destroy
-# Amazon S3 バケットにオブジェクトが残っていると destroy が失敗するため、必要なら中身を空にしてから再実行
 
-# 2) Amazon ECR リポジトリの削除 (任意)
+# 0) Amazon ECS サービスを停止し、新規ログ生成 (Amazon S3 への追記) を止める
+export ECS_CLUSTER=$(terraform output -raw ecs_cluster_name)
+export ECS_SERVICE=$(terraform output -raw ecs_service_name)
+
+aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" \
+  --desired-count 0 --region ap-northeast-1 >/dev/null
+
+aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+  --region ap-northeast-1
+
+# 1) Amazon S3 バケットを空にする
+export FULL_LOGS_BUCKET=$(terraform output -raw full_logs_bucket_name)
+export GLUE_ICEBERG_BUCKET=$(terraform output -raw glue_iceberg_bucket_name)
+
+for BUCKET in "$FULL_LOGS_BUCKET" "$GLUE_ICEBERG_BUCKET"; do
+  aws s3api delete-objects --bucket "$BUCKET" --region ap-northeast-1 \
+    --delete "$(aws s3api list-object-versions --bucket "$BUCKET" --region ap-northeast-1 \
+      --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)" \
+    2>/dev/null || true
+  aws s3api delete-objects --bucket "$BUCKET" --region ap-northeast-1 \
+    --delete "$(aws s3api list-object-versions --bucket "$BUCKET" --region ap-northeast-1 \
+      --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' --output json)" \
+    2>/dev/null || true
+done
+
+# 2) Terraform で作成した AWS リソースを削除 (Amazon EC2 内 infra/ ディレクトリで)
+terraform destroy
+
+# 3) Amazon ECR リポジトリの削除
 aws ecr delete-repository --repository-name log-generator --force --region ap-northeast-1
 aws ecr delete-repository --repository-name custom-fluent-bit --force --region ap-northeast-1
+
+# 4) Lake Formation に付与した権限を取り消す (Lake Formation 有効アカウントのみ)
+export AWS_REGION=ap-northeast-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export QUERY_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role
+export FIREHOSE_S3TABLES_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/otel-log-pipeline-dev-firehose-s3tables-iceberg
+export S3TABLES_CATALOG=${ACCOUNT_ID}:s3tablescatalog/otel-log-pipeline-dev-s3tables
+export NAMESPACE=otel_log_pipeline_dev
+export S3TABLES_TABLE=error_logs
+
+# 4-1) 検証/destroy 用ロール (QUERY_ROLE) への付与を取り消す (手順4 相当)
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions SELECT DESCRIBE DROP ALTER DELETE INSERT \
+  --resource '{"Table":{"DatabaseName":"otel_log_pipeline_dev_logs","Name":"errors"}}' 2>/dev/null || true
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions DESCRIBE DROP CREATE_TABLE \
+  --resource '{"Database":{"Name":"otel_log_pipeline_dev_logs"}}' 2>/dev/null || true
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions DESCRIBE \
+  --resource "{\"Database\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"Name\":\"$NAMESPACE\"}}" 2>/dev/null || true
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$QUERY_ROLE" \
+  --permissions SELECT DESCRIBE DROP ALTER DELETE \
+  --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"$NAMESPACE\",\"Name\":\"$S3TABLES_TABLE\"}}" 2>/dev/null || true
+
+# 4-2) Amazon Data Firehose ロールへの付与を取り消す (手順3 相当)
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$FIREHOSE_S3TABLES_ROLE" \
+  --permissions DESCRIBE \
+  --resource "{\"Database\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"Name\":\"$NAMESPACE\"}}" 2>/dev/null || true
+aws lakeformation revoke-permissions --region "$AWS_REGION" \
+  --principal DataLakePrincipalIdentifier="$FIREHOSE_S3TABLES_ROLE" \
+  --permissions ALL \
+  --resource "{\"Table\":{\"CatalogId\":\"$S3TABLES_CATALOG\",\"DatabaseName\":\"$NAMESPACE\",\"Name\":\"$S3TABLES_TABLE\"}}" 2>/dev/null || true
+
+# 4-3) 実行ロールを Data Lake 管理者から除外する (手順1 相当。既存の他の管理者は保持)
+export MYROLE="$QUERY_ROLE"
+aws lakeformation get-data-lake-settings --region "$AWS_REGION" \
+  | jq --arg r "$MYROLE" '.DataLakeSettings | .DataLakeAdmins = [.DataLakeAdmins[] | select(.DataLakePrincipalIdentifier != $r)]' \
+  > /tmp/lf-settings-cleanup.json
+aws lakeformation put-data-lake-settings --region "$AWS_REGION" \
+  --data-lake-settings file:///tmp/lf-settings-cleanup.json
 ```
 
 作業用 Amazon EC2 と IAM の削除 (マネジメントコンソール):
@@ -441,4 +600,3 @@ aws ecr delete-repository --repository-name custom-fluent-bit --force --region a
 
 - **AdministratorAccess は広範な権限** です。ハンズオン専用とし、完了後は必ず削除してください。
 - ローカルバックエンドのステートはこの Amazon EC2 上 (`infra/` 配下) に保存されます。Amazon EC2 を終了するとステートも失われるため、**先に `terraform destroy` を実行** してから Amazon EC2 を終了してください。
-- AWS Graviton (arm64) の Amazon EC2 を使う場合は、`docker build --platform linux/amd64` がエミュレーションとなりビルドが遅くなります。本ハンズオンでは **x86_64 インスタンス** を推奨します。
