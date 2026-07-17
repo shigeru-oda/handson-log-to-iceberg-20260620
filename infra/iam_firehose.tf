@@ -105,15 +105,32 @@ resource "aws_iam_role" "firehose_s3tables" {
 }
 
 data "aws_iam_policy_document" "firehose_s3tables" {
-  # S3 Tables テーブルバケット / namespace / table への操作
+  # S3 Tables テーブルバケット / namespace / table への操作。
+  # AWS 公式ドキュメント (Grant Firehose access to Amazon S3 Tables / IAM access
+  # control) が示す最小権限セットに絞る (s3tables:* ワイルドカードは避ける)。
+  # https://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html
   statement {
-    sid     = "S3TablesAccess"
-    effect  = "Allow"
-    actions = ["s3tables:*"]
-    resources = [
-      aws_s3tables_table_bucket.iceberg.arn,
-      "${aws_s3tables_table_bucket.iceberg.arn}/*",
+    sid    = "S3TablesAccess"
+    effect = "Allow"
+    actions = [
+      "s3tables:GetNamespace",
+      "s3tables:GetTable",
+      "s3tables:GetTableData",
+      "s3tables:GetTableMetadataLocation",
+      "s3tables:PutTableData",
+      "s3tables:UpdateTableMetadataLocation",
     ]
+    resources = [
+      "${aws_s3tables_table_bucket.iceberg.arn}",
+      "${aws_s3tables_table_bucket.iceberg.arn}/table/*",
+    ]
+  }
+
+  statement {
+    sid       = "S3TableBucketAccess"
+    effect    = "Allow"
+    actions   = ["s3tables:GetTableBucket"]
+    resources = [aws_s3tables_table_bucket.iceberg.arn]
   }
 
   # S3 Tables の Glue federated カタログ連携 (read) — Firehose の Iceberg 配信が

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+     width="1100" height="510" viewBox="0 0 1100 510" font-family="Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#232F3E"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1100" height="510" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="550" y="28" font-size="20" font-weight="bold" text-anchor="middle" fill="#232F3E">
+    otel-log-pipeline (ap-northeast-1) — Infra Architecture
+  </text>
+
+  <!-- ============ AWS Cloud / Region boundary ============ -->
+  <rect x="20" y="50" width="1060" height="440" rx="10" fill="#F2F8FD" stroke="#7AA6D2" stroke-width="1.5"/>
+  <text x="34" y="72" font-size="13" font-weight="bold" fill="#527FBE">AWS ap-northeast-1</text>
+
+  <!-- ============ VPC boundary ============ -->
+  <rect x="45" y="90" width="380" height="330" rx="8" fill="#EAF2E3" stroke="#7AA65C" stroke-width="1.5"/>
+  <text x="58" y="110" font-size="12" font-weight="bold" fill="#527A3B">VPC 10.0.0.0/16</text>
+
+  <!-- Public Subnets -->
+  <rect x="60" y="122" width="170" height="90" rx="6" fill="#FFFFFF" stroke="#7AA65C"/>
+  <text x="70" y="138" font-size="10" fill="#527A3B">Public Subnet (1a)</text>
+  <text x="70" y="152" font-size="9" fill="#527A3B">10.0.1.0/24</text>
+
+  <rect x="240" y="122" width="170" height="90" rx="6" fill="#FFFFFF" stroke="#7AA65C"/>
+  <text x="250" y="138" font-size="10" fill="#527A3B">Public Subnet (1c)</text>
+  <text x="250" y="152" font-size="9" fill="#527A3B">10.0.2.0/24</text>
+
+  <text x="60" y="228" font-size="9" fill="#527A3B">Internet Gateway (0.0.0.0/0) / SG: egress 443 only</text>
+
+  <!-- ECS Cluster / Service / Task -->
+  <rect x="60" y="245" width="350" height="160" rx="6" fill="#FDF2E9" stroke="#D86613" stroke-width="1.3"/>
+  <text x="70" y="262" font-size="11" font-weight="bold" fill="#D86613">ECS Fargate Cluster / Service (desiredCount=1)</text>
+
+  <rect x="75" y="272" width="320" height="120" rx="6" fill="#FFF8F0" stroke="#D86613" stroke-dasharray="4,2"/>
+  <text x="85" y="288" font-size="10" fill="#D86613">Task Definition</text>
+
+  <rect x="90" y="296" width="130" height="80" rx="5" fill="#FFFFFF" stroke="#D86613"/>
+  <text x="100" y="312" font-size="10" font-weight="bold" fill="#232F3E">app</text>
+  <text x="100" y="326" font-size="8.5" fill="#444">Log_Generator (Go)</text>
+  <text x="100" y="338" font-size="8.5" fill="#444">stdout</text>
+  <text x="100" y="350" font-size="8.5" fill="#444">logDriver:</text>
+  <text x="100" y="361" font-size="8.5" fill="#444">awsfirelens</text>
+
+  <rect x="240" y="296" width="140" height="80" rx="5" fill="#FFFFFF" stroke="#D86613"/>
+  <text x="250" y="312" font-size="10" font-weight="bold" fill="#232F3E">log_router</text>
+  <text x="250" y="326" font-size="8.5" fill="#444">FireLens / Fluent Bit</text>
+  <text x="250" y="338" font-size="8.5" fill="#444">custom.conf</text>
+  <text x="250" y="350" font-size="8.5" fill="#444">severity routing +</text>
+  <text x="250" y="361" font-size="8.5" fill="#444">Iceberg schema xform</text>
+
+  <!-- arrow app -> log_router -->
+  <path d="M220,336 L238,336" stroke="#232F3E" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- ============ Right side: destinations ============ -->
+  <!-- 表示順序: S3 full-logs → CloudWatch Logs → Glue Data Catalog → S3 Tables -->
+  <!-- ECS 右端(410) と Firehose 左端(550) の間隔を 140px に拡大。
+       宛先ボックス列 (x=820-1040) は AWS 枠 (x=20-1080) の右端に合わせて詰めている。 -->
+
+  <!-- 1) Firehose full_logs -->
+  <rect x="550" y="100" width="190" height="52" rx="6" fill="#F2ECFB" stroke="#8C4FFF" stroke-width="1.3"/>
+  <text x="562" y="124" font-size="10" font-weight="bold" fill="#5A32A3">Firehose: full-logs</text>
+  <text x="562" y="140" font-size="8.5" fill="#5A32A3">destination: extended_s3</text>
+
+  <!-- 1) S3 full-logs -->
+  <rect x="820" y="100" width="220" height="60" rx="6" fill="#E9F5E9" stroke="#4C8A4C" stroke-width="1.3"/>
+  <text x="832" y="120" font-size="10" font-weight="bold" fill="#3B6E3B">S3: full-logs bucket</text>
+  <text x="832" y="134" font-size="8.5" fill="#3B6E3B">raw/yyyy/MM/dd/HH/*.gz</text>
+  <text x="832" y="146" font-size="8.5" fill="#3B6E3B">全 severity (無加工)</text>
+
+  <!-- 2) CloudWatch Logs (Firehose を介さず log_router から直接配信) -->
+  <rect x="820" y="185" width="220" height="55" rx="6" fill="#FBEAF0" stroke="#C0407A" stroke-width="1.3"/>
+  <text x="832" y="205" font-size="10" font-weight="bold" fill="#9C3364">CloudWatch Logs</text>
+  <text x="832" y="219" font-size="8.5" fill="#9C3364">/ecs/&lt;prefix&gt;/errors</text>
+  <text x="832" y="231" font-size="8.5" fill="#9C3364">ERROR / FATAL のみ</text>
+
+  <!-- 3) Firehose glue_iceberg -->
+  <rect x="550" y="270" width="190" height="55" rx="6" fill="#F2ECFB" stroke="#8C4FFF" stroke-width="1.3"/>
+  <text x="562" y="294" font-size="10" font-weight="bold" fill="#5A32A3">Firehose: glue-iceberg</text>
+  <text x="562" y="310" font-size="8.5" fill="#5A32A3">destination: iceberg</text>
+
+  <!-- 3) Glue Data Catalog + S3 data -->
+  <rect x="820" y="263" width="220" height="72" rx="6" fill="#FFF6DF" stroke="#B88A00" stroke-width="1.3"/>
+  <text x="832" y="283" font-size="10" font-weight="bold" fill="#8A6600">Glue Data Catalog (self-managed Iceberg)</text>
+  <text x="832" y="297" font-size="8.5" fill="#8A6600">db: otel_log_pipeline_dev_logs</text>
+  <text x="832" y="309" font-size="8.5" fill="#8A6600">table: errors (V2/Parquet/MoR)</text>
+  <text x="832" y="321" font-size="8.5" fill="#8A6600">data: S3 glue-iceberg bucket</text>
+
+  <!-- 4) Firehose s3tables_iceberg -->
+  <rect x="550" y="360" width="190" height="55" rx="6" fill="#F2ECFB" stroke="#8C4FFF" stroke-width="1.3"/>
+  <text x="562" y="384" font-size="10" font-weight="bold" fill="#5A32A3">Firehose: s3tables-iceberg</text>
+  <text x="562" y="400" font-size="8.5" fill="#5A32A3">destination: iceberg</text>
+
+  <!-- 4) S3 Tables -->
+  <rect x="820" y="352" width="220" height="68" rx="6" fill="#E9F5E9" stroke="#4C8A4C" stroke-width="1.3"/>
+  <text x="832" y="372" font-size="10" font-weight="bold" fill="#3B6E3B">S3 Tables (managed Iceberg)</text>
+  <text x="832" y="386" font-size="8.5" fill="#3B6E3B">bucket: otel-log-pipeline-dev-s3tables</text>
+  <text x="832" y="398" font-size="8.5" fill="#3B6E3B">ns: otel_log_pipeline_dev</text>
+  <text x="832" y="410" font-size="8.5" fill="#3B6E3B">table: error_logs (ERROR/FATAL のみ)</text>
+
+  <!-- arrows: log_router -> 4 outputs -->
+  <!-- ECS 右端 (x=410) から縦に並んだ出発点で分離してから各宛先へ折れ線で到達させ、
+       線同士の交差を避ける。出発点は上から full-logs(310) / CloudWatch(330) /
+       glue-iceberg(350) / s3tables-iceberg(370) の順で ECS ボックス内に収める。
+       Firehose を経由するタグ名ラベルは対応する Firehose ボックスの直上に配置する。 -->
+  <path d="M410,310 L450,310 L450,126 L548,126" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="645" y="94" font-size="8" fill="#232F3E" text-anchor="middle">app-firelens* (全ログ)</text>
+
+  <path d="M410,330 L470,330 L470,212 L818,212" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="930" y="179" font-size="8" fill="#232F3E" text-anchor="middle">error.* (ERROR/FATAL)</text>
+
+  <path d="M410,350 L490,350 L490,297 L548,297" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="645" y="264" font-size="8" fill="#232F3E" text-anchor="middle">iceberg.* (変換後)</text>
+
+  <path d="M410,370 L510,370 L510,387 L548,387" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="645" y="354" font-size="8" fill="#232F3E" text-anchor="middle">iceberg.* (変換後)</text>
+
+  <!-- firehose -> destination arrows -->
+  <path d="M740,126 L818,126" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M740,297 L818,297" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M740,387 L818,387" stroke="#232F3E" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- ============ Legend ============ -->
+  <text x="60" y="460" font-size="11" font-weight="bold" fill="#232F3E">凡例:</text>
+  <rect x="60" y="470" width="16" height="12" fill="#FDF2E9" stroke="#D86613"/>
+  <text x="82" y="480" font-size="9" fill="#232F3E">ECS Fargate</text>
+  <rect x="180" y="470" width="16" height="12" fill="#F2ECFB" stroke="#8C4FFF"/>
+  <text x="202" y="480" font-size="9" fill="#232F3E">Amazon Data Firehose</text>
+  <rect x="340" y="470" width="16" height="12" fill="#E9F5E9" stroke="#4C8A4C"/>
+  <text x="362" y="480" font-size="9" fill="#232F3E">Amazon S3 / S3 Tables</text>
+  <rect x="510" y="470" width="16" height="12" fill="#FBEAF0" stroke="#C0407A"/>
+  <text x="532" y="480" font-size="9" fill="#232F3E">CloudWatch Logs</text>
+  <rect x="650" y="470" width="16" height="12" fill="#FFF6DF" stroke="#B88A00"/>
+  <text x="672" y="480" font-size="9" fill="#232F3E">AWS Glue Data Catalog</text>
+</svg>

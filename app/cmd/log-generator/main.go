@@ -8,12 +8,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/shigeruoda/handson-log-to-iceberg-20260620/app/internal/config"
@@ -32,10 +35,27 @@ func main() {
 	sched := scheduler.Scheduler{Interval: time.Duration(cfg.IntervalMillis) * time.Millisecond}
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
+	// ECS Fargate はタスク停止時に SIGTERM を送信する。これを捕捉して次回の
+	// スリープ後に安全にループを終了させ、書き込み中のログを打ち切らない
+	// (graceful shutdown)。ctx は sleepFn 経由でのみループへ伝播する。
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+
 	// maxIterations <= 0 は無限ループを意味する (常駐稼働; Req 2.2)。
-	if err := runLoop(os.Stdout, rng, sched, time.Now, time.Sleep, 0); err != nil {
+	if err := runLoop(ctx, os.Stdout, rng, sched, time.Now, sleepContext, 0); err != nil {
 		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+// sleepContext は time.Sleep(d) と同様に待機するが、ctx が完了 (SIGTERM/SIGINT
+// による cancel) した場合は即座に返す。本番用の sleepFn として runLoop に渡す。
+func sleepContext(ctx context.Context, d time.Duration) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
 	}
 }
 
@@ -46,16 +66,23 @@ func main() {
 // 各反復で 1 件の LogRecord を生成し、JSON Lines (1 行 + 改行) として w へ書き出し、
 // scheduler.Next が示す次回時刻までの間隔だけ sleepFn で待機する。
 // maxIterations が 0 以下のときは無限に繰り返す (本番の常駐稼働)。
+// ctx が完了した場合は、現在の反復の書き込みとスリープ待ちを終えた直後にループを
+// 終了する (Req 2.2: ECS タスク停止時の graceful shutdown)。
 func runLoop(
+	ctx context.Context,
 	w io.Writer,
 	rng *rand.Rand,
 	sched scheduler.Scheduler,
 	nowFn func() time.Time,
-	sleepFn func(time.Duration),
+	sleepFn func(context.Context, time.Duration),
 	maxIterations int,
 ) error {
 	// json.Encoder は各値の後に改行を付与するため JSON Lines 出力に適する。
+	// SetEscapeHTML(false): body 等に含まれる '<' '>' '&' を \u003c 等へ
+	// エスケープしない。ログの可読性と、下流 (Fluent Bit JSON parser) での
+	// 意図しない文字置換を避けるため無効化する。
 	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
 
 	for i := 0; maxIterations <= 0 || i < maxIterations; i++ {
 		now := nowFn()
@@ -64,8 +91,16 @@ func runLoop(
 			return fmt.Errorf("failed to write log record: %w", err)
 		}
 
+		if ctx.Err() != nil {
+			return nil
+		}
+
 		next := sched.Next(now)
-		sleepFn(next.Sub(now))
+		sleepFn(ctx, next.Sub(now))
+
+		if ctx.Err() != nil {
+			return nil
+		}
 	}
 
 	return nil
