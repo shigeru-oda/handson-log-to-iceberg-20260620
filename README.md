@@ -514,13 +514,14 @@ for BUCKET in "$FULL_LOGS_BUCKET" "$GLUE_ICEBERG_BUCKET"; do
 done
 
 # 2) Terraform で作成した AWS リソースを削除 (Amazon EC2 内 infra/ ディレクトリで)
+# 時折、1)の作業でS3を消した後も遅れて配信されたログが流れてS3が削除できない場合があるので、その場合にはコンソールから削除した後にリトライください
 terraform destroy
 
 # 3) Amazon ECR リポジトリの削除
 aws ecr delete-repository --repository-name log-generator --force --region ap-northeast-1
 aws ecr delete-repository --repository-name custom-fluent-bit --force --region ap-northeast-1
 
-# 4) Lake Formation に付与した権限を取り消す (Lake Formation 有効アカウントのみ)
+# 4) Lake Formation に付与した権限を取り消す
 export AWS_REGION=ap-northeast-1
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export QUERY_ROLE=arn:aws:iam::${ACCOUNT_ID}:role/handson-iceberg-ec2-role
