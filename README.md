@@ -204,6 +204,8 @@ terraform apply # 権限不足で落ちる
 
 ### Lake Formation 権限付与
 
+![](./image/catalog.drawio.svg)
+
 #### 共通変数
 
 ```bash
@@ -337,7 +339,6 @@ aws lakeformation list-permissions --region "$AWS_REGION" \
 #### 5) 残りをデプロイ
 
 ```bash
-# イメージは既定で実行アカウント/リージョンの Amazon ECR から自動解決されるため -var は不要。
 terraform apply
 ```
 
